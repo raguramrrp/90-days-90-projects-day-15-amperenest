@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Budget & Energy Goals{% endblock %}
+
+{% block content %}
+<!-- Metrics Grid -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Monthly Budget Cap</span>
+      <span class="metric-tag tag-blue">{{ budget.month }}/{{ budget.year }}</span>
+    </div>
+    <div class="metric-value">{{ currency_symbol }}{{ budget.monthly_budget_amount|intcomma }}</div>
+    <div class="metric-subtext"><a href="{% url 'budgets:edit' %}" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Change Cap &rarr;</a></div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Current Cycle Spend</span>
+      <span class="metric-tag {% if utilization_pct > 80 %}tag-red{% else %}tag-green{% endif %}">{{ utilization_pct }}% of Cap</span>
+    </div>
+    <div class="metric-value">{{ currency_symbol }}{{ estimated_bill|intcomma }}</div>
+    <div class="metric-subtext">{{ cycle_kwh|floatformat:1 }} kWh consumed so far</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Remaining Budget Buffer</span>
+      <span class="metric-tag tag-green">Surplus</span>
+    </div>
+    <div class="metric-value">{{ currency_symbol }}{{ remaining_budget|intcomma }}</div>
+    <div class="metric-subtext">{{ cycle_info.days_remaining }} days remaining in billing cycle</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Daily Consumption Target</span>
+      <span class="metric-tag tag-blue">Pacing Target</span>
+    </div>
+    <div class="metric-value">{{ budget.daily_target_kwh }} <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">kWh/d</span></div>
+    <div class="metric-subtext">Monthly Target: {{ budget.target_consumption_kwh }} kWh</div>
+  </div>
+</div>
+
+<div class="grid-2col">
+  <div>
+    <!-- Cycle Budget Pacing & Overrun Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Billing Cycle Pacing & Forecast Projection</h2>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span>Budget Progress ({{ utilization_pct }}% of {{ currency_symbol }}{{ budget.monthly_budget_amount|intcomma }})</span>
+            <span style="font-weight: 600;">{{ currency_symbol }}{{ estimated_bill|intcomma }} spent</span>
+          </div>
+          <div style="height: 10px; background-color: var(--bg-surface-secondary); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-color);">
+            <div style="height: 100%; width: {{ utilization_pct }}%; background-color: {% if utilization_pct > 85 %}var(--danger){% elif utilization_pct > 65 %}var(--warning){% else %}var(--accent-secondary){% endif %};"></div>
+          </div>
+        </div>
+
+        {% if forecast.has_sufficient_data %}
+          <div style="padding: 14px; background-color: var(--bg-surface-secondary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;">End-of-Cycle Projection</div>
+            <div style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
+              Projected Final Bill: <strong>{{ currency_symbol }}{{ forecast.projected_bill_amount|intcomma }}</strong> ({{ forecast.projected_total_kwh }} kWh)
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+              {% if forecast.projected_bill_amount > budget.monthly_budget_amount %}
+                <span style="color: var(--danger); font-weight: 600;">Warning:</span> Projected to overrun your budget by {{ currency_symbol }}{{ forecast.projected_bill_amount|add:budget.monthly_budget_amount|intcomma }}.
+              {% else %}
+                <span style="color: var(--success); font-weight: 600;">On Track:</span> Projected consumption will stay within the {{ currency_symbol }}{{ budget.monthly_budget_amount|intcomma }} monthly budget.
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <div class="alert-box alert-info">
+            {{ forecast.message }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Energy Goals Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Household Energy Goals</h2>
+        <a href="{% url 'budgets:goal_create' %}" class="btn btn-primary btn-sm">Set New Goal</a>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Goal Title</th>
+                <th class="text-right">Target</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in goals %}
+                <tr>
+                  <td>
+                    <div style="font-weight: 600;">{{ g.title }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Target Date: {{ g.target_date }}</div>
+                  </td>
+                  <td class="text-right" style="font-weight: 600; color: var(--accent-primary);">
+                    {{ g.target_value }} {{ g.unit }}
+                  </td>
+                  <td>
+                    <span class="badge {% if g.status == 'Achieved' %}badge-paid{% elif g.status == 'Missed' %}badge-overdue{% else %}badge-pending{% endif %}">
+                      {{ g.status }}
+                    </span>
+                  </td>
+                  <td class="text-right" style="white-space: nowrap;">
+                    <a href="{% url 'budgets:goal_edit' g.id %}" class="btn btn-secondary btn-sm">Edit</a>
+                    <a href="{% url 'budgets:goal_delete' g.id %}" class="btn btn-danger btn-sm">Delete</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center" style="padding: 20px; color: var(--text-muted);">No goals defined yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

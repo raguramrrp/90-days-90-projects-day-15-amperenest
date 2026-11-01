@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block page_title %}Consumption Trends & Diagnostics{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Detailed Consumption Trends (Past 30 Days)</h2>
+      <div class="card-subtitle">{{ household.name }} &bull; Daily Recorded Pattern with Spline Interpolation</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="trendsPlot" style="height: 350px; width: 100%;"></div>
+  </div>
+</div>
+
+<div class="grid-2col">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Monthly Usage Pattern</h2>
+      </div>
+      <div class="card-body">
+        <div id="monthlyTrendsPlot" style="height: 280px; width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Pattern Diagnostics & Observations</h2>
+      </div>
+      <div class="card-body">
+        {% for ins in insights %}
+          <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color-subtle);">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--accent-primary); margin-bottom: 2px;">
+              {{ ins.category }} &bull; {{ ins.impact }} Priority
+            </div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px;">{{ ins.title }}</div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">{{ ins.description }}</div>
+          </div>
+        {% empty %}
+          <div style="font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px;">
+            Continue recording regular readings to extract weekly and monthly cycle diagnostics.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const textColor = isDark ? '#F1F5F9' : '#172B45';
+  const gridColor = isDark ? '#26354A' : '#E1E8EF';
+
+  const dailyDates = {{ chart_data.daily_dates|safe }};
+  const dailyKwh = {{ chart_data.daily_kwh|safe }};
+
+  Plotly.newPlot('trendsPlot', [{
+    x: dailyDates,
+    y: dailyKwh,
+    type: 'scatter',
+    mode: 'lines+markers',
+    fill: 'tozeroy',
+    fillcolor: isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(35, 117, 200, 0.06)',
+    line: { color: '#2375C8', width: 2.4, shape: 'spline' },
+    marker: { size: 6, color: '#168A78' },
+    name: 'Actual kWh'
+  }], {
+    margin: { t: 20, r: 20, l: 45, b: 40 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: { tickcolor: gridColor, gridcolor: gridColor, tickfont: { color: textColor, size: 10.5 } },
+    yaxis: { title: { text: 'Units (kWh)', font: { color: textColor, size: 11 } }, tickcolor: gridColor, gridcolor: gridColor, tickfont: { color: textColor, size: 10.5 } }
+  }, { responsive: true, displayModeBar: false });
+
+  const monthlyLabels = {{ chart_data.monthly_labels|safe }};
+  const monthlyKwh = {{ chart_data.monthly_kwh|safe }};
+
+  Plotly.newPlot('monthlyTrendsPlot', [{
+    x: monthlyLabels,
+    y: monthlyKwh,
+    type: 'bar',
+    marker: { color: '#168A78' }
+  }], {
+    margin: { t: 20, r: 20, l: 45, b: 35 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: { tickcolor: gridColor, gridcolor: 'transparent', tickfont: { color: textColor, size: 11 } },
+    yaxis: { title: { text: 'Monthly kWh', font: { color: textColor, size: 11 } }, tickcolor: gridColor, gridcolor: gridColor, tickfont: { color: textColor, size: 10.5 } }
+  }, { responsive: true, displayModeBar: false });
+});
+</script>
+{% endblock %}

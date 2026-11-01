@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Household Appliance Inventory{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Appliance Energy Audit & Inventory</h2>
+      <div class="card-subtitle">{{ household.name }} &bull; Total Estimated {{ total_monthly_kwh|floatformat:1 }} kWh/month (~{{ currency_symbol }}{{ total_est_cost|intcomma }}/mo)</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'appliances:create' %}" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Add Appliance
+      </a>
+      <a href="{% url 'appliances:insights' %}" class="btn btn-secondary btn-sm">
+        Energy Breakdown
+      </a>
+      <a href="{% url 'analytics:savings_planner' %}" class="btn btn-secondary btn-sm">
+        Savings Simulator
+      </a>
+      <a href="{% url 'analytics:export_appliances_excel' %}" class="btn btn-secondary btn-sm">
+        Export Audit
+      </a>
+    </div>
+  </div>
+
+  <div class="accuracy-disclaimer" style="margin: 12px 18px 0 18px;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+    <span><strong>Measurement Disclosure:</strong> Household meters measure total consumption. Appliance metrics represent engineered estimates derived from nameplate wattage and user-reported operating hours.</span>
+  </div>
+
+  <div class="card-body" style="padding: 12px 0 0 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Appliance Details</th>
+            <th>Category</th>
+            <th class="text-right">Power Rating</th>
+            <th class="text-center">Qty</th>
+            <th class="text-right">Daily Runtime</th>
+            <th class="text-right">Monthly Est. (kWh)</th>
+            <th class="text-right">Est. Monthly Cost</th>
+            <th class="text-center">Efficiency</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in appliances %}
+            <tr {% if not a.is_active %}style="opacity: 0.6;"{% endif %}>
+              <td>
+                <div style="font-weight: 600;">{{ a.name }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ a.brand|default:'Generic' }} {% if a.model_name %}&bull; {{ a.model_name }}{% endif %}</div>
+              </td>
+              <td>{{ a.get_category_display }}</td>
+              <td class="text-right" style="font-family: monospace;">{{ a.rated_power_watts }} W</td>
+              <td class="text-center">{{ a.quantity }}</td>
+              <td class="text-right">{{ a.daily_operating_hours }} hrs/d</td>
+              <td class="text-right" style="font-weight: 600; color: var(--accent-primary);">{{ a.monthly_consumption_kwh }} kWh</td>
+              <td class="text-right" style="font-weight: 600;">~{{ currency_symbol }}{{ a.estimate_monthly_cost|intcomma }}</td>
+              <td class="text-center">
+                {% if a.energy_star_rating %}
+                  <span class="badge badge-paid">{{ a.energy_star_rating }} Star BEE</span>
+                {% else %}
+                  <span style="font-size: 11px; color: var(--text-muted);">Unrated</span>
+                {% endif %}
+              </td>
+              <td class="text-right" style="white-space: nowrap;">
+                <a href="{% url 'analytics:savings_planner' %}?appliance={{ a.id }}" class="btn btn-secondary btn-sm" title="Simulate usage reduction">Simulate</a>
+                <a href="{% url 'appliances:edit' a.id %}" class="btn btn-secondary btn-sm">Edit</a>
+                <a href="{% url 'appliances:delete' a.id %}" class="btn btn-danger btn-sm">Delete</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center" style="padding: 30px;">
+                <div class="empty-state">
+                  <h4>No Appliances Registered</h4>
+                  <p>Build your household appliance inventory to identify high-drain devices and model hypothetical savings scenarios.</p>
+                  <a href="{% url 'appliances:create' %}" class="btn btn-primary btn-sm">Add First Appliance</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

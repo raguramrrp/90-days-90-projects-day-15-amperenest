@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block page_title %}System Preferences{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">User Workspace & Display Preferences</span>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Interface Theme</label>
+          {{ form.theme_preference }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Currency Symbol</label>
+          {{ form.currency_symbol }}
+          <div class="form-help">Displayed across all cost intelligence screens (default: ₹)</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Default Household Workspace</label>
+          {{ form.default_household }}
+        </div>
+
+        <div style="margin: 18px 0; border-top: 1px solid var(--border-color); padding-top: 14px;">
+          <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;">Alert Delivery Preferences</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+              {{ form.notification_email }} Receive email notifications for upcoming bills and budget alerts
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+              {{ form.notification_app }} Show in-app warning badges and dashboard alerts
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Preferences</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

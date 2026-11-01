@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}{{ household.name }} — Overview{% endblock %}
+
+{% block content %}
+<!-- Top Context Bar -->
+<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+  <div>
+    <div style="font-size: 12px; color: var(--text-secondary);">
+      Billing Cycle: <strong>{{ cycle_info.cycle_start|date:"M d" }} – {{ cycle_info.cycle_end|date:"M d, Y" }}</strong>
+      &bull; Day {{ cycle_info.days_elapsed }} of {{ cycle_info.total_cycle_days }} ({{ cycle_info.days_remaining }} days remaining)
+    </div>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{% url 'consumption:create' %}" class="btn btn-primary btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Record Meter Reading
+    </a>
+    <a href="{% url 'billing:calculator' %}" class="btn btn-secondary btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line></svg>
+      Bill Calculator
+    </a>
+  </div>
+</div>
+
+<!-- KPI Metrics Grid -->
+<div class="metrics-grid">
+  <!-- 1. Cycle Consumption -->
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Cycle Consumption</span>
+      <span class="metric-tag tag-blue">Recorded</span>
+    </div>
+    <div class="metric-value">{{ cycle_kwh|floatformat:1 }} <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">kWh</span></div>
+    <div class="metric-subtext">Across {{ cycle_info.days_elapsed }} recorded days in cycle</div>
+  </div>
+
+  <!-- 2. Estimated Current Bill -->
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Estimated Cycle Bill</span>
+      <span class="metric-tag tag-amber">Simulation</span>
+    </div>
+    <div class="metric-value">{{ currency_symbol }}{{ estimated_bill_amt|intcomma }}</div>
+    <div class="metric-subtext">
+      {% if tariff %}{{ tariff.name|truncatechars:28 }}{% else %}Default Tariff{% endif %}
+    </div>
+  </div>
+
+  <!-- 3. Monthly Budget Utilization -->
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Budget Remaining</span>
+      <span class="metric-tag {% if budget_utilization_pct > 85 %}tag-red{% elif budget_utilization_pct > 65 %}tag-amber{% else %}tag-green{% endif %}">
+        {{ budget_utilization_pct }}% Used
+      </span>
+    </div>
+    <div class="metric-value">{{ currency_symbol }}{{ remaining_budget|intcomma }}</div>
+    <div class="metric-subtext">Budget cap: {{ currency_symbol }}{{ budget_amt|intcomma }}</div>
+  </div>
+
+  <!-- 4. Daily Average -->
+  <div class="metric-card">
+    <div class="metric-label">
+      <span>Daily Average</span>
+      <span class="metric-tag tag-blue">Pacing</span>
+    </div>
+    <div class="metric-value">{{ daily_avg_kwh|floatformat:2 }} <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">kWh/d</span></div>
+    <div class="metric-subtext">Target: {{ household.sanctioned_load_kw|default:3.0 }} kW connected load</div>
+  </div>
+</div>
+
+<!-- Main Section: Asymmetric 2-Column Grid -->
+<div class="grid-2col">
+
+  <!-- Left Column: Primary Charts -->
+  <div>
+    <!-- Daily Trend Chart -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Daily Electricity Consumption Trend</h2>
+          <div class="card-subtitle">Actual units recorded from meter readings over the past 30 days (kWh)</div>
+        </div>
+        <a href="{% url 'consumption:list' %}" class="btn btn-secondary btn-sm">View Log</a>
+      </div>
+      <div class="card-body" style="padding: 10px;">
+        <div id="dailyChart" style="height: 280px; width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Monthly Comparison Chart -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Monthly Electricity Consumption</h2>
+          <div class="card-subtitle">Aggregate monthly usage comparison across historical billing periods (kWh)</div>
+        </div>
+        <a href="{% url 'analytics:trends' %}" class="btn btn-secondary btn-sm">Detailed Analysis</a>
+      </div>
+      <div class="card-body" style="padding: 10px;">
+        <div id="monthlyChart" style="height: 250px; width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Bill Calculation Transparent Breakdown Preview -->
+    {% if bill_calc %}
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Current Cycle Slab Breakdown (Estimate)</h2>
+            <div class="card-subtitle">{{ bill_calc.tariff_name }} &bull; {{ bill_calc.billing_frequency }}</div>
+          </div>
+          <span class="badge badge-pending">Planning Estimate</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Slab Order</th>
+                  <th>Consumption Range</th>
+                  <th class="text-right">Units In Slab</th>
+                  <th class="text-right">Rate</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in bill_calc.slab_breakdown %}
+                  <tr>
+                    <td>Slab {{ s.order }}</td>
+                    <td>{{ s.range }}</td>
+                    <td class="text-right">{{ s.units|floatformat:1 }} kWh</td>
+                    <td class="text-right">{{ currency_symbol }}{{ s.rate|floatformat:2 }}</td>
+                    <td class="text-right">{{ currency_symbol }}{{ s.amount|intcomma }}</td>
+                  </tr>
+                {% endfor %}
+                {% if bill_calc.subsidy_amount > 0 %}
+                  <tr style="background-color: var(--surface-green); font-weight: 500;">
+                    <td colspan="4">{{ bill_calc.subsidy_description }}</td>
+                    <td class="text-right" style="color: var(--accent-secondary);">-{{ currency_symbol }}{{ bill_calc.subsidy_amount|intcomma }}</td>
+                  </tr>
+                {% endif %}
+                {% if bill_calc.electricity_duty_amount > 0 %}
+                  <tr>
+                    <td colspan="4">Electricity Duty / Tax ({{ bill_calc.electricity_duty_pct }}%)</td>
+                    <td class="text-right">+{{ currency_symbol }}{{ bill_calc.electricity_duty_amount|intcomma }}</td>
+                  </tr>
+                {% endif %}
+                <tr style="font-weight: 700; background-color: var(--bg-surface-secondary);">
+                  <td colspan="4">Total Estimated Cycle Amount</td>
+                  <td class="text-right" style="color: var(--accent-primary);">{{ currency_symbol }}{{ bill_calc.total_bill_amount|intcomma }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Operational Panels -->
+  <div>
+    <!-- Active Alerts Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Active Energy Alerts</h2>
+        <a href="{% url 'alerts:list' %}" class="btn btn-secondary btn-sm">All Alerts</a>
+      </div>
+      <div class="card-body" style="padding: 12px;">
+        {% if recent_alerts %}
+          {% for alert in recent_alerts %}
+            <div class="alert-box alert-{{ alert.severity }}" style="margin-bottom: 8px;">
+              <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 12px;">{{ alert.title }}</div>
+                <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">{{ alert.message }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align: center; padding: 18px 0; color: var(--text-muted); font-size: 12.5px;">
+            No active energy alerts. Consumption is operating within configured thresholds.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Upcoming Utility Bill Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Utility Bill Status</h2>
+        <a href="{% url 'billing:list' %}" class="btn btn-secondary btn-sm">Bill History</a>
+      </div>
+      <div class="card-body">
+        {% if upcoming_bill %}
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Bill Amount Due</div>
+              <div style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
+                {{ currency_symbol }}{{ upcoming_bill.total_bill_amount|intcomma }}
+              </div>
+            </div>
+            <span class="badge {% if upcoming_bill.payment_status == 'Overdue' %}badge-overdue{% else %}badge-pending{% endif %}">
+              {{ upcoming_bill.get_payment_status_display }}
+            </span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">
+            Due Date: <strong>{{ upcoming_bill.due_date|default:'Not specified' }}</strong> &bull; {{ upcoming_bill.total_units_kwh }} kWh
+          </div>
+          <a href="{% url 'billing:detail' upcoming_bill.id %}" class="btn btn-secondary btn-sm" style="width: 100%;">
+            View Official Bill & Pay
+          </a>
+        {% elif previous_bill %}
+          <div style="font-size: 12.5px; color: var(--text-secondary);">
+            Last Paid Bill: <strong>{{ currency_symbol }}{{ previous_bill.total_bill_amount|intcomma }}</strong> ({{ previous_bill.total_units_kwh }} kWh)
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">{{ previous_bill.billing_period_start }} to {{ previous_bill.billing_period_end }}</div>
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 10px 0;">
+            No utility bills recorded yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Top High-Cost Appliances -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Highest Estimated Appliances</h2>
+        <a href="{% url 'appliances:list' %}" class="btn btn-secondary btn-sm">Inventory</a>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <tbody>
+              {% for a in top_appliances %}
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; font-size: 12.5px;">{{ a.name }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">{{ a.rated_power_watts }}W &bull; {{ a.daily_operating_hours }}h/day</div>
+                  </td>
+                  <td class="text-right">
+                    <div style="font-weight: 600;">{{ a.monthly_consumption_kwh }} kWh</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">~{{ currency_symbol }}{{ a.estimate_monthly_cost|intcomma }}/mo</div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="2" class="text-center" style="color: var(--text-muted); padding: 16px;">No appliances added yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="accuracy-disclaimer" style="margin: 8px 12px 12px 12px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>Nameplate wattage estimate for planning purposes.</span>
+      </div>
+    </div>
+
+    <!-- Practical Energy Insights -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Recommended Cost Actions</h2>
+      </div>
+      <div class="card-body" style="padding: 12px;">
+        {% if insights %}
+          {% for ins in insights %}
+            <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color-subtle);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--accent-primary);">{{ ins.category }}</span>
+                <span class="badge {% if ins.impact == 'High' %}badge-overdue{% else %}badge-active{% endif %}">{{ ins.impact }} Impact</span>
+              </div>
+              <div style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">{{ ins.title }}</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">{{ ins.action }}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px 0;">
+            Record regular daily readings to generate actionable efficiency recommendations.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const textColor = isDark ? '#F1F5F9' : '#172B45';
+  const gridColor = isDark ? '#26354A' : '#E1E8EF';
+
+  // 1. Daily Trend Chart
+  const dailyDates = {{ chart_data.daily_dates|safe }};
+  const dailyKwh = {{ chart_data.daily_kwh|safe }};
+
+  const dailyTrace = {
+    x: dailyDates,
+    y: dailyKwh,
+    type: 'scatter',
+    mode: 'lines+markers',
+    line: { color: '#2375C8', width: 2.2, shape: 'spline' },
+    marker: { size: 5, color: '#168A78' },
+    name: 'Actual Consumption (kWh)'
+  };
+
+  const dailyLayout = {
+    margin: { t: 20, r: 20, l: 45, b: 40 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: {
+      tickcolor: gridColor,
+      gridcolor: gridColor,
+      tickfont: { color: textColor, size: 10.5 },
+      showline: false
+    },
+    yaxis: {
+      title: { text: 'kWh', font: { color: textColor, size: 11 } },
+      tickcolor: gridColor,
+      gridcolor: gridColor,
+      tickfont: { color: textColor, size: 10.5 },
+      zerolinecolor: gridColor
+    },
+    showlegend: false
+  };
+
+  Plotly.newPlot('dailyChart', [dailyTrace], dailyLayout, { responsive: true, displayModeBar: false });
+
+  // 2. Monthly Usage Bar Chart
+  const monthlyLabels = {{ chart_data.monthly_labels|safe }};
+  const monthlyKwh = {{ chart_data.monthly_kwh|safe }};
+
+  const monthlyTrace = {
+    x: monthlyLabels,
+    y: monthlyKwh,
+    type: 'bar',
+    marker: { color: '#168A78', opacity: 0.9 },
+    name: 'Monthly kWh'
+  };
+
+  const monthlyLayout = {
+    margin: { t: 20, r: 20, l: 45, b: 35 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: {
+      tickcolor: gridColor,
+      gridcolor: 'transparent',
+      tickfont: { color: textColor, size: 11 },
+      showline: false
+    },
+    yaxis: {
+      title: { text: 'Total kWh', font: { color: textColor, size: 11 } },
+      tickcolor: gridColor,
+      gridcolor: gridColor,
+      tickfont: { color: textColor, size: 10.5 },
+      zerolinecolor: gridColor
+    },
+    showlegend: false
+  };
+
+  Plotly.newPlot('monthlyChart', [monthlyTrace], monthlyLayout, { responsive: true, displayModeBar: false });
+});
+</script>
+{% endblock %}

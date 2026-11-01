@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 650px;">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">{{ title }}</h2>
+    </div>
+    <div class="card-body">
+      {% if form.errors %}
+        <div class="alert-box alert-danger">
+          Please correct the highlighted form errors.
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Meter Identifier / Label *</label>
+          {{ form.meter_name }}
+          <div class="form-help">e.g. Ground Floor Main Digital Meter, Solar Inverter Net-Meter</div>
+          {{ form.meter_name.errors }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Meter Serial Number *</label>
+            {{ form.meter_number }}
+            {{ form.meter_number.errors }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Consumer / Service Connection No.</label>
+            {{ form.service_number }}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Electricity Utility Provider *</label>
+            {{ form.electricity_provider }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Consumer Category</label>
+            {{ form.consumer_category }}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Phase Connection</label>
+            {{ form.connection_type }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Connected Load (kW) *</label>
+            {{ form.sanctioned_load_kw }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Billing Frequency</label>
+            {{ form.billing_cycle }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Applicable Tariff Schedule</label>
+          {{ form.tariff_plan }}
+          <div class="form-help">Used to compute slab rates and estimated costs for this meter.</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Dial Digits (Rollover Threshold)</label>
+            {{ form.dial_digits }}
+            <div class="form-help">e.g. 5 digits rolls over after 99,999 kWh</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Installation Date</label>
+            {{ form.installation_date }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          {{ form.notes }}
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button type="submit" class="btn btn-primary">Save Meter Configuration</button>
+          <a href="{% url 'meters:list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

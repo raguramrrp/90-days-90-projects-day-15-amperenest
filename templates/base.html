@@ -1,0 +1,222 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ user_theme|default:'light' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AmpereNest{% endblock %} — Smart Household Energy Intelligence</title>
+  <link rel="stylesheet" href="{% static 'css/amperenest.css' %}">
+  <!-- Plotly.js for Professional Engineering Charts -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- Fixed Left Sidebar -->
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-header">
+      <a href="{% url 'core:dashboard' %}" class="brand-wrapper">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span class="brand-text">AmpereNest</span>
+        <span class="brand-badge">PRO</span>
+      </a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group-title">Overview</div>
+      <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'core' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+        <span>Dashboard</span>
+      </a>
+
+      <div class="nav-group-title">Consumption</div>
+      <a href="{% url 'consumption:list' %}" class="nav-link {% if request.resolver_match.url_name == 'list' and request.resolver_match.app_name == 'consumption' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Meter Readings</span>
+      </a>
+      <a href="{% url 'consumption:history' %}" class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        <span>Consumption History</span>
+      </a>
+
+      <div class="nav-group-title">Household</div>
+      <a href="{% url 'appliances:list' %}" class="nav-link {% if request.resolver_match.app_name == 'appliances' and request.resolver_match.url_name == 'list' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path></svg>
+        <span>Appliances</span>
+      </a>
+      <a href="{% url 'appliances:insights' %}" class="nav-link {% if request.resolver_match.url_name == 'insights' and request.resolver_match.app_name == 'appliances' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>Appliance Insights</span>
+      </a>
+      <a href="{% url 'households:list' %}" class="nav-link {% if request.resolver_match.app_name == 'households' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>Household Management</span>
+      </a>
+      <a href="{% url 'meters:list' %}" class="nav-link {% if request.resolver_match.app_name == 'meters' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 1.3-1.3-.35"></path></svg>
+        <span>Meter Management</span>
+      </a>
+
+      <div class="nav-group-title">Billing</div>
+      <a href="{% url 'billing:calculator' %}" class="nav-link {% if request.resolver_match.url_name == 'calculator' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="14"></line><line x1="12" y1="14" x2="12" y2="14"></line><line x1="8" y1="14" x2="8" y2="14"></line><line x1="16" y1="18" x2="16" y2="18"></line><line x1="12" y1="18" x2="12" y2="18"></line><line x1="8" y1="18" x2="8" y2="18"></line></svg>
+        <span>Bill Calculator</span>
+      </a>
+      <a href="{% url 'billing:list' %}" class="nav-link {% if request.resolver_match.app_name == 'billing' and request.resolver_match.url_name != 'calculator' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Bill History</span>
+      </a>
+      <a href="{% url 'tariffs:list' %}" class="nav-link {% if request.resolver_match.app_name == 'tariffs' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span>Tariff Settings</span>
+      </a>
+
+      <div class="nav-group-title">Energy Control</div>
+      <a href="{% url 'budgets:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'budgets' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="18" x2="12" y2="6"></line></svg>
+        <span>Budget & Goals</span>
+      </a>
+      <a href="{% url 'alerts:list' %}" class="nav-link {% if request.resolver_match.app_name == 'alerts' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span>Alerts</span>
+        {% if unread_alerts_count > 0 %}
+          <span class="nav-badge">{{ unread_alerts_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{% url 'analytics:savings_planner' %}" class="nav-link {% if request.resolver_match.url_name == 'savings_planner' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <span>Savings Planner</span>
+      </a>
+
+      <div class="nav-group-title">Analytics</div>
+      <a href="{% url 'analytics:trends' %}" class="nav-link {% if request.resolver_match.url_name == 'trends' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span>Consumption Trends</span>
+      </a>
+      <a href="{% url 'analytics:costs' %}" class="nav-link {% if request.resolver_match.url_name == 'costs' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Cost Analysis</span>
+      </a>
+      <a href="{% url 'analytics:forecasting' %}" class="nav-link {% if request.resolver_match.url_name == 'forecasting' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+        <span>Forecasting</span>
+      </a>
+      <a href="{% url 'analytics:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Reports</span>
+      </a>
+
+      <div class="nav-group-title">Settings</div>
+      <a href="{% url 'accounts:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>Profile</span>
+      </a>
+      <a href="{% url 'accounts:preferences' %}" class="nav-link {% if request.resolver_match.url_name == 'preferences' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Preferences</span>
+      </a>
+      <a href="{% url 'consumption:import' %}" class="nav-link {% if request.resolver_match.url_name == 'import' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <span>Data Management</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content Container -->
+  <div class="app-main">
+
+    <!-- Top Sticky Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
+
+      <div class="header-right">
+        <!-- Household Switcher -->
+        {% if accessible_households %}
+          <form method="get" class="household-select-form">
+            <select class="household-switcher-select" onchange="window.location.href='/households/' + this.value + '/switch/?next={{ request.path|urlencode }}'">
+              {% for h in accessible_households %}
+                <option value="{{ h.id }}" {% if active_household and active_household.id == h.id %}selected{% endif %}>
+                  {{ h.name }} ({{ h.city }})
+                </option>
+              {% endfor %}
+            </select>
+          </form>
+        {% endif %}
+
+        <!-- Alerts Bell -->
+        <a href="{% url 'alerts:list' %}" class="btn btn-secondary btn-sm" title="View Energy Alerts">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          {% if unread_alerts_count > 0 %}
+            <span style="color: var(--danger); font-weight: 700;">{{ unread_alerts_count }}</span>
+          {% endif %}
+        </a>
+
+        <!-- Theme Toggle -->
+        <button type="button" class="btn btn-secondary btn-sm" id="themeToggleBtn" title="Toggle Light / Dark Theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+
+        <!-- User Profile & Logout -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <a href="{% url 'accounts:profile' %}" style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); text-decoration: none;">
+            {{ request.user.username }}
+          </a>
+          <a href="{% url 'accounts:logout' %}" class="btn btn-secondary btn-sm" title="Log Out">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="app-content">
+      <!-- Flash Messages -->
+      {% if messages %}
+        <div style="margin-bottom: 18px;">
+          {% for message in messages %}
+            <div class="alert-box alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+
+</div>
+
+<script>
+// Theme Switcher Logic
+const themeBtn = document.getElementById('themeToggleBtn');
+const htmlEl = document.documentElement;
+
+// Initialize from stored preference if present
+const storedTheme = localStorage.getItem('amperenest_theme');
+if (storedTheme) {
+  htmlEl.setAttribute('data-theme', storedTheme);
+}
+
+if (themeBtn) {
+  themeBtn.addEventListener('click', () => {
+    const current = htmlEl.getAttribute('data-theme') || 'light';
+    const nextTheme = current === 'dark' ? 'light' : 'dark';
+    htmlEl.setAttribute('data-theme', nextTheme);
+    localStorage.setItem('amperenest_theme', nextTheme);
+    // Trigger resize on charts to refresh theme colors
+    window.dispatchEvent(new Event('resize'));
+  });
+}
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

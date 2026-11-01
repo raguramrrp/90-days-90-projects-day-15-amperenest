@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block page_title %}Reports & Data Exports{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Data Exports & Auditing Reports</h2>
+      <div class="card-subtitle">{{ household.name }} &bull; Download Raw Data and Structured Analytical Workbooks</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      
+      <!-- 1. Readings CSV -->
+      <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-surface);">
+        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Meter Readings Log</div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+          Complete historical register of all physical meter dials, interval calculations, and reading types ({{ readings_count }} records).
+        </p>
+        <div style="display: flex; gap: 8px;">
+          <a href="{% url 'analytics:export_readings_csv' %}" class="btn btn-primary btn-sm">Download CSV</a>
+          <a href="{% url 'analytics:export_readings_excel' %}" class="btn btn-secondary btn-sm">Excel (.xlsx)</a>
+        </div>
+      </div>
+
+      <!-- 2. Bills Excel -->
+      <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-surface);">
+        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Electricity Invoices & Bills</div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+          Official utility bill statements, payment states, due dates, and energy charge breakdowns ({{ bills_count }} records).
+        </p>
+        <div>
+          <a href="{% url 'analytics:export_bills_excel' %}" class="btn btn-primary btn-sm">Download Excel Workbook</a>
+        </div>
+      </div>
+
+      <!-- 3. Appliance Audit -->
+      <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-surface);">
+        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Appliance Inventory & Audit</div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+          Detailed device-level nameplate power ratings, daily hours, standby loads, and estimated monthly costs ({{ appliances_count }} appliances).
+        </p>
+        <div>
+          <a href="{% url 'analytics:export_appliances_excel' %}" class="btn btn-primary btn-sm">Download Audit Sheet</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

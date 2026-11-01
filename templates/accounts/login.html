@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — AmpereNest Energy Intelligence</title>
+  <link rel="stylesheet" href="{% static 'css/amperenest.css' %}">
+</head>
+<body style="background-color: var(--bg-main); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;">
+
+<div style="width: 100%; max-width: 380px;">
+
+  <div style="text-align: center; margin-bottom: 24px;">
+    <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+      <span style="font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.4px;">AmpereNest</span>
+    </div>
+    <p style="font-size: 13px; color: var(--text-secondary);">Household Energy & Electricity Cost Intelligence</p>
+  </div>
+
+  <div class="card" style="box-shadow: var(--shadow-card);">
+    <div class="card-header" style="justify-content: center;">
+      <span class="card-title">Sign In to Your Workspace</span>
+    </div>
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-box alert-{% if message.tags == 'error' %}danger{% else %}info{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label" for="id_username">Username</label>
+          <input type="text" name="username" id="id_username" class="form-input" required autofocus placeholder="Enter your username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="id_password">Password</label>
+          <input type="password" name="password" id="id_password" class="form-input" required placeholder="Enter password">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px; padding: 8px;">
+          Authenticate Workspace
+        </button>
+      </form>
+
+      <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary); text-align: center;">
+        Quick demo login: <strong>demouser</strong> / <strong>demo1234</strong>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; font-size: 12.5px; color: var(--text-secondary);">
+    Need an account? <a href="{% url 'accounts:register' %}" style="color: var(--accent-primary); font-weight: 600; text-decoration: none;">Create household workspace</a>
+  </div>
+
+</div>
+
+</body>
+</html>

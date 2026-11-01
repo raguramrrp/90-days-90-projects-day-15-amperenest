@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 650px;">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">{{ title }}</h2>
+    </div>
+    <div class="card-body">
+      {% if form.errors %}
+        <div class="alert-box alert-danger">
+          Please correct the highlighted form errors.
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Tariff Schedule Name *</label>
+          {{ form.name }}
+          <div class="form-help">e.g. TANGEDCO Domestic LT-1A (2024-2025)</div>
+          {{ form.name.errors }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Electricity Provider *</label>
+            {{ form.provider }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">State / Region *</label>
+            {{ form.state }}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Consumer Category</label>
+            {{ form.consumer_category }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Billing Cycle Frequency</label>
+            {{ form.billing_frequency }}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Effective Start Date *</label>
+            {{ form.effective_from }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Effective End Date (Leave blank if active)</label>
+            {{ form.effective_to }}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Electricity Duty / Tax (%)</label>
+            {{ form.electricity_duty_pct }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Free Government Units per Cycle</label>
+            {{ form.free_units_per_cycle }}
+            <div class="form-help">e.g. 100 free units in Tamil Nadu</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Government Subsidy Description</label>
+          {{ form.subsidy_description }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes & Regulatory Order Reference</label>
+          {{ form.notes }}
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button type="submit" class="btn btn-primary">Save Tariff Schedule</button>
+          <a href="{% url 'tariffs:list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

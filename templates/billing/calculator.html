@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Smart Bill Calculator{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Simulate Electricity Bill by Consumption</h2>
+          <div class="card-subtitle">Accurate slab-based calculation engine using verified utility tariffs</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label">Units Consumed (kWh) *</label>
+            {{ form.units_consumed }}
+            <div class="form-help">Enter total electricity units (e.g. from current reading diff or target quota).</div>
+            {{ form.units_consumed.errors }}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Applicable Tariff Schedule *</label>
+            {{ form.tariff_plan }}
+            {{ form.tariff_plan.errors }}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Sanctioned Connected Load (kW) *</label>
+            {{ form.sanctioned_load_kw }}
+            <div class="form-help">Connected load in kW from your electricity bill (used for fixed load charges).</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+            Calculate Detailed Breakdown
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    {% if calc_result %}
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Calculation Breakdown</h2>
+            <div class="card-subtitle">{{ calc_result.tariff_name }} ({{ calc_result.billing_frequency }})</div>
+          </div>
+          <span class="badge badge-pending">Simulation Estimate</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div style="padding: 16px 18px; background-color: var(--bg-surface-secondary); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Estimated Total Bill</div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent-primary); margin-top: 2px;">
+                {{ currency_symbol }}{{ calc_result.total_bill_amount|intcomma }}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Total Units</div>
+              <div style="font-size: 18px; font-weight: 600;">{{ calc_result.units_consumed }} kWh</div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Slab</th>
+                  <th>Range</th>
+                  <th class="text-right">Units</th>
+                  <th class="text-right">Rate</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in calc_result.slab_breakdown %}
+                  <tr>
+                    <td>Slab {{ s.order }}</td>
+                    <td>{{ s.range }}</td>
+                    <td class="text-right">{{ s.units }}</td>
+                    <td class="text-right">{{ currency_symbol }}{{ s.rate }}</td>
+                    <td class="text-right">{{ currency_symbol }}{{ s.amount|intcomma }}</td>
+                  </tr>
+                {% endfor %}
+                {% if calc_result.subsidy_amount > 0 %}
+                  <tr style="background-color: var(--surface-green); font-weight: 500;">
+                    <td colspan="4">{{ calc_result.subsidy_description }} (First {{ calc_result.free_units }} units)</td>
+                    <td class="text-right" style="color: var(--accent-secondary);">-{{ currency_symbol }}{{ calc_result.subsidy_amount|intcomma }}</td>
+                  </tr>
+                {% endif %}
+                {% if calc_result.fixed_charges > 0 %}
+                  <tr>
+                    <td colspan="4">Sanctioned Load Fixed Charges</td>
+                    <td class="text-right">+{{ currency_symbol }}{{ calc_result.fixed_charges|intcomma }}</td>
+                  </tr>
+                {% endif %}
+                {% for ch in calc_result.additional_charges %}
+                  <tr>
+                    <td colspan="4">{{ ch.name }}</td>
+                    <td class="text-right">+{{ currency_symbol }}{{ ch.amount|intcomma }}</td>
+                  </tr>
+                {% endfor %}
+                {% if calc_result.electricity_duty_amount > 0 %}
+                  <tr>
+                    <td colspan="4">Electricity Duty / Tax ({{ calc_result.electricity_duty_pct }}%)</td>
+                    <td class="text-right">+{{ currency_symbol }}{{ calc_result.electricity_duty_amount|intcomma }}</td>
+                  </tr>
+                {% endif %}
+                <tr style="font-weight: 700; background-color: var(--bg-surface-secondary);">
+                  <td colspan="4">Net Estimated Bill Amount</td>
+                  <td class="text-right" style="color: var(--accent-primary);">{{ currency_symbol }}{{ calc_result.total_bill_amount|intcomma }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="accuracy-disclaimer" style="margin: 12px 18px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <span>Calculated for budgeting and planning. Official utility statements may include local meter rents or rounding adjustments.</span>
+        </div>
+      </div>
+    {% else %}
+      <div class="card">
+        <div class="card-body">
+          <div class="empty-state">
+            <h4>Ready to Calculate</h4>
+            <p>Enter your consumption units and select a tariff structure on the left to see the step-by-step telescopic slab calculation.</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

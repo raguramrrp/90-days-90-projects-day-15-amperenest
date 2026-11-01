@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Energy Insights & Savings Planner{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+  <div>
+    <!-- Simulator Form Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Interactive "What-If" Savings Simulator</h2>
+          <div class="card-subtitle">Simulate potential kilowatt-hour and monthly bill savings by adjusting daily operating hours</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="get">
+          <div class="form-group">
+            <label class="form-label">Select Household Appliance *</label>
+            <select name="appliance" class="form-select" onchange="this.form.submit()">
+              <option value="">-- Choose from your appliance inventory --</option>
+              {% for a in appliances %}
+                <option value="{{ a.id }}" {% if selected_appliance_id == a.id %}selected{% endif %}>
+                  {{ a.name }} ({{ a.rated_power_watts }}W &bull; Currently {{ a.daily_operating_hours }}h/day)
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {% if sim_result %}
+            <div class="form-group">
+              <label class="form-label">Simulate Proposed Daily Operating Hours (Hours / Day) *</label>
+              <input type="number" name="proposed_hours" step="0.5" min="0" max="24" value="{{ proposed_hours_raw|default:sim_result.appliance.daily_operating_hours }}" class="form-input">
+              <div class="form-help">Current usage: {{ sim_result.appliance.daily_operating_hours }} hrs/day across {{ sim_result.appliance.days_used_per_month }} days/month.</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 6px;">
+              Re-Calculate Simulation
+            </button>
+          {% endif %}
+        </form>
+
+        {% if sim_result %}
+          <!-- Simulation Outcome Panel -->
+          <div style="margin-top: 24px; padding: 16px; background-color: var(--surface-green); border-radius: var(--radius-sm); border: 1px solid rgba(22, 138, 120, 0.25);">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-secondary); font-weight: 700;">Simulated Monthly Impact</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0;">
+              <div>
+                <div style="font-size: 11px; color: var(--text-secondary);">Electricity Conserved</div>
+                <div style="font-size: 22px; font-weight: 700; color: var(--accent-secondary);">
+                  {{ sim_result.kwh_saved }} <span style="font-size: 13px; font-weight: 500;">kWh/month</span>
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 11px; color: var(--text-secondary);">Estimated Cost Reduction</div>
+                <div style="font-size: 22px; font-weight: 700; color: var(--accent-secondary);">
+                  {{ currency_symbol }}{{ sim_result.cost_saved|intcomma }} <span style="font-size: 13px; font-weight: 500;">/month</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+              Reducing <strong>{{ sim_result.appliance.name }}</strong> runtime from {{ sim_result.appliance.daily_operating_hours }}h to {{ sim_result.proposed_hours }}h/day cuts estimated usage from {{ sim_result.original_monthly_kwh }} kWh to {{ sim_result.proposed_monthly_kwh }} kWh.
+            </div>
+
+            <!-- Save Scenario Form -->
+            <form method="post" action="{% url 'analytics:savings_save' %}" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(22, 138, 120, 0.2);">
+              {% csrf_token %}
+              <input type="hidden" name="appliance_id" value="{{ sim_result.appliance.id }}">
+              <input type="hidden" name="proposed_hours" value="{{ sim_result.proposed_hours }}">
+              <input type="hidden" name="kwh_saved" value="{{ sim_result.kwh_saved }}">
+              <input type="hidden" name="cost_saved" value="{{ sim_result.cost_saved }}">
+              <input type="hidden" name="name" value="Reduce {{ sim_result.appliance.name|truncatechars:20 }} to {{ sim_result.proposed_hours }}h/day">
+              
+              <button type="submit" class="btn btn-primary btn-sm">
+                Save This Efficiency Scenario
+              </button>
+            </form>
+          </div>
+
+          <div class="accuracy-disclaimer">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span><strong>Hypothetical Simulation:</strong> Savings projections are modeled using average slab rates and rated nameplate wattage. Actual bill changes depend on overall household tier transitions.</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Saved Scenarios Archive -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Saved Efficiency Scenarios</h2>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Scenario Title</th>
+                <th class="text-right">Units Saved</th>
+                <th class="text-right">Cost Saved</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in scenarios %}
+                <tr>
+                  <td>
+                    <div style="font-weight: 500;">{{ s.name }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">{{ s.created_at|date:"M d, Y" }}</div>
+                  </td>
+                  <td class="text-right" style="font-weight: 600; color: var(--accent-secondary);">{{ s.monthly_kwh_saved }} kWh</td>
+                  <td class="text-right" style="font-weight: 600; color: var(--accent-secondary);">{{ currency_symbol }}{{ s.monthly_cost_saved|intcomma }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center" style="padding: 20px; color: var(--text-muted);">No saved efficiency scenarios.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+reading_date,reading_value,meter_number,reading_type,notes
+2026-09-01,15200.50,04-201-008-1422,cumulative,Cycle start reading
+2026-09-05,15248.20,04-201-008-1422,cumulative,Normal weekday usage
+2026-09-10,15302.80,04-201-008-1422,cumulative,Weekend AC load
+2026-09-15,15355.10,04-201-008-1422,cumulative,Mid-cycle check
+2026-09-20,15409.60,04-201-008-1422,cumulative,Moderate temperature
+2026-09-25,15462.40,04-201-008-1422,cumulative,Rainy weather decrease
+2026-09-30,15518.90,04-201-008-1422,cumulative,End of month reading

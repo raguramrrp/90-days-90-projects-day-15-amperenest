@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Meter Readings & Logs{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h2 class="card-title">Recorded Electricity Meter Readings</h2>
+      <div class="card-subtitle">{{ household.name }} &bull; Total {{ stats.readings_count }} readings logged in past 30 days</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'consumption:create' %}?method=cumulative" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        New Dial Reading
+      </a>
+      <a href="{% url 'consumption:create' %}?method=direct" class="btn btn-secondary btn-sm">
+        Direct kWh Entry
+      </a>
+      <a href="{% url 'consumption:import' %}" class="btn btn-secondary btn-sm">
+        Import CSV / Excel
+      </a>
+      <a href="{% url 'analytics:export_readings_csv' %}" class="btn btn-secondary btn-sm" title="Export CSV">
+        Export CSV
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="padding: 12px 18px; background-color: var(--bg-surface-secondary); border-bottom: 1px solid var(--border-color);">
+    <form method="get" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <div style="min-width: 180px;">
+        <select name="meter" class="form-select" onchange="this.form.submit()">
+          <option value="">-- All Active Meters --</option>
+          {% for m in meters %}
+            <option value="{{ m.id }}" {% if selected_meter_id == m.id|stringformat:"s" %}selected{% endif %}>
+              {{ m.meter_name }} ({{ m.meter_number }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 12px; color: var(--text-secondary);">From:</span>
+        <input type="date" name="start_date" value="{{ start_date|default:'' }}" class="form-input" style="padding: 4px 8px; font-size: 12px; max-width: 130px;">
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 12px; color: var(--text-secondary);">To:</span>
+        <input type="date" name="end_date" value="{{ end_date|default:'' }}" class="form-input" style="padding: 4px 8px; font-size: 12px; max-width: 130px;">
+      </div>
+
+      <button type="submit" class="btn btn-secondary btn-sm">Apply Filters</button>
+      {% if selected_meter_id or start_date or end_date %}
+        <a href="{% url 'consumption:list' %}" class="btn btn-sm" style="color: var(--text-muted);">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Meter</th>
+            <th class="text-right">Meter Reading (kWh)</th>
+            <th class="text-right">Interval Consumption</th>
+            <th>Reading Mode</th>
+            <th>Source</th>
+            <th>Notes</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in page_obj %}
+            <tr>
+              <td>
+                <span style="font-weight: 600;">{{ r.reading_date|date:"Y-m-d" }}</span>
+                {% if r.reading_time %}<span style="font-size: 11px; color: var(--text-muted); margin-left: 4px;">{{ r.reading_time|time:"H:i" }}</span>{% endif %}
+              </td>
+              <td>{{ r.meter.meter_name }}</td>
+              <td class="text-right" style="font-family: monospace; font-size: 13px;">
+                {{ r.reading_value|floatformat:2 }}
+                {% if r.is_flagged_inversion %}
+                  <span class="badge badge-overdue" title="Inconsistent dial reading lower than previous reading">Inversion</span>
+                {% endif %}
+              </td>
+              <td class="text-right" style="font-weight: 600; color: var(--accent-primary);">
+                +{{ r.consumption_kwh|floatformat:2 }} kWh
+              </td>
+              <td>
+                <span class="badge {% if r.reading_type == 'cumulative' %}badge-active{% else %}badge-pending{% endif %}">
+                  {{ r.get_reading_type_display }}
+                </span>
+              </td>
+              <td style="font-size: 12px; color: var(--text-secondary);">{{ r.reading_source }}</td>
+              <td style="font-size: 11.5px; color: var(--text-muted); max-width: 180px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                {{ r.notes|default:'—' }}
+              </td>
+              <td class="text-right" style="white-space: nowrap;">
+                <a href="{% url 'consumption:edit' r.id %}" class="btn btn-secondary btn-sm" title="Edit Reading">Edit</a>
+                <a href="{% url 'consumption:delete' r.id %}" class="btn btn-danger btn-sm" title="Delete Reading">Delete</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center" style="padding: 30px;">
+                <div class="empty-state">
+                  <h4>No Meter Readings Found</h4>
+                  <p>Start recording your daily or periodic electricity meter values to enable cost estimation and consumption pacing.</p>
+                  <a href="{% url 'consumption:create' %}" class="btn btn-primary btn-sm">Record First Reading</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <div style="padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); font-size: 12px;">
+        <span style="color: var(--text-secondary);">Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <div style="display: flex; gap: 6px;">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if selected_meter_id %}&meter={{ selected_meter_id }}{% endif %}" class="btn btn-secondary btn-sm">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if selected_meter_id %}&meter={{ selected_meter_id }}{% endif %}" class="btn btn-secondary btn-sm">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

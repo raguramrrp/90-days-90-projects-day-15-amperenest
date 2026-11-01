@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}{{ household.name }} — Property Details{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+  <div>
+    <!-- Property Info Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">{{ household.name }}</h2>
+          <div class="card-subtitle">{{ household.get_property_type_display }} &bull; {{ household.city }}, {{ household.state }}</div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <a href="{% url 'households:switch' household.id %}" class="btn btn-primary btn-sm">Set as Active Workspace</a>
+          <a href="{% url 'households:edit' household.id %}" class="btn btn-secondary btn-sm">Edit</a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Sanctioned Load</div>
+            <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">{{ household.sanctioned_load_kw }} kW</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Monthly Budget Target</div>
+            <div style="font-size: 16px; font-weight: 600; color: var(--accent-primary);">{{ currency_symbol }}{{ household.monthly_budget_amount|intcomma }}</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Occupants Profile</div>
+            <div style="font-size: 14px; font-weight: 500;">{{ household.occupants }} Residents</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Billing Cycle Pacing</div>
+            <div style="font-size: 14px; font-weight: 500;">Starts on Day {{ household.billing_cycle_day }} of month</div>
+          </div>
+        </div>
+
+        {% if household.address_line1 %}
+          <div style="font-size: 12.5px; color: var(--text-secondary); padding-top: 12px; border-top: 1px solid var(--border-color);">
+            Address: {{ household.address_line1 }}, {{ household.address_line2 }} {{ household.city }}, {{ household.state }} - {{ household.postal_code }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Assigned Meters -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Installed Electricity Meters ({{ meters.count }})</h2>
+        <a href="{% url 'meters:create' %}" class="btn btn-primary btn-sm">Add Meter</a>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Meter Name</th>
+                <th>Serial Number</th>
+                <th>Provider / Category</th>
+                <th class="text-right">Load</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in meters %}
+                <tr>
+                  <td style="font-weight: 600;">{{ m.meter_name }}</td>
+                  <td>{{ m.meter_number }}</td>
+                  <td>{{ m.electricity_provider }}</td>
+                  <td class="text-right">{{ m.sanctioned_load_kw }} kW</td>
+                  <td class="text-right">
+                    <a href="{% url 'meters:detail' m.id %}" class="btn btn-secondary btn-sm">View Meter</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center" style="padding: 20px; color: var(--text-muted);">No meters assigned.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Household Sharing Members Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Authorized Household Members</h2>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom: 14px; font-size: 12.5px; color: var(--text-secondary);">
+          Owner: <strong>{{ household.created_by.username }}</strong> ({{ household.created_by.email }})
+        </div>
+
+        <div class="table-responsive" style="margin-bottom: 20px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Role</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in members %}
+                <tr>
+                  <td style="font-weight: 500;">{{ m.user.username }}</td>
+                  <td><span class="badge badge-active">{{ m.role }}</span></td>
+                  <td class="text-right">
+                    {% if request.user == household.created_by %}
+                      <form method="post" action="{% url 'households:member_remove' household.id m.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Remove member?');">Remove</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center" style="color: var(--text-muted); padding: 12px;">No additional members.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if request.user == household.created_by %}
+          <div style="border-top: 1px solid var(--border-color); padding-top: 14px;">
+            <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px;">Add Member by Username</h4>
+            <form method="post" action="{% url 'households:member_add' household.id %}">
+              {% csrf_token %}
+              <div class="form-group">
+                {{ member_form.username }}
+              </div>
+              <div class="form-group">
+                {{ member_form.role }}
+              </div>
+              <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%;">Authorize Member</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

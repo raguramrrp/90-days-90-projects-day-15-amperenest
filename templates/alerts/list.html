@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block page_title %}Alerts & Notification Engine{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+  <div>
+    <!-- Active Alerts Inbox -->
+    <div class="card">
+      <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 class="card-title">Active Energy Alerts Inbox</h2>
+          <div class="card-subtitle">{{ household.name }} &bull; {{ unread_count }} unread alerts</div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <form method="post" action="{% url 'alerts:dismiss_all' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Dismiss all current alerts?');">Dismiss All</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Severity Filter Pills -->
+      <div style="padding: 10px 18px; background-color: var(--bg-surface-secondary); border-bottom: 1px solid var(--border-color); display: flex; gap: 8px;">
+        <a href="{% url 'alerts:list' %}" class="btn btn-sm {% if not severity_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+        <a href="?severity=danger" class="btn btn-sm {% if severity_filter == 'danger' %}btn-primary{% else %}btn-secondary{% endif %}">Critical Dangers</a>
+        <a href="?severity=warning" class="btn btn-sm {% if severity_filter == 'warning' %}btn-primary{% else %}btn-secondary{% endif %}">Warnings</a>
+        <a href="?severity=info" class="btn btn-sm {% if severity_filter == 'info' %}btn-primary{% else %}btn-secondary{% endif %}">Informational</a>
+      </div>
+
+      <div class="card-body" style="padding: 14px 18px;">
+        {% for alert in alerts %}
+          <div class="alert-box alert-{{ alert.severity }}" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+                <span class="badge {% if alert.severity == 'danger' %}badge-overdue{% elif alert.severity == 'warning' %}badge-pending{% else %}badge-active{% endif %}">
+                  {{ alert.get_severity_display }}
+                </span>
+                <span style="font-size: 11px; color: var(--text-muted);">{{ alert.created_at|date:"M d, Y H:i" }}</span>
+                {% if not alert.is_read %}
+                  <span style="font-size: 10px; font-weight: 700; color: var(--accent-primary);">NEW</span>
+                {% endif %}
+              </div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">{{ alert.title }}</div>
+              <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">{{ alert.message }}</div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-left: 14px;">
+              {% if not alert.is_read %}
+                <a href="{% url 'alerts:mark_read' alert.id %}" class="btn btn-secondary btn-sm" title="Mark as Read">Read</a>
+              {% endif %}
+              <a href="{% url 'alerts:dismiss' alert.id %}" class="btn btn-secondary btn-sm" title="Dismiss Alert">&times;</a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="empty-state">
+            <h4>No Active Alerts</h4>
+            <p>Your household electricity consumption is normal and within configured budget and reading frequency limits.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Configured Alert Rules Panel -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Configured Alert Rules</h2>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rule Type</th>
+                <th class="text-right">Trigger</th>
+                <th class="text-center">State</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rules %}
+                <tr>
+                  <td>
+                    <div style="font-weight: 500; font-size: 12.5px;">{{ r.get_rule_type_display }}</div>
+                  </td>
+                  <td class="text-right" style="font-family: monospace;">
+                    {% if r.threshold_value > 0 %}{{ r.threshold_value }}{% else %}Auto{% endif %}
+                  </td>
+                  <td class="text-center">
+                    <form method="post" action="{% url 'alerts:rule_toggle' r.id %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm {% if r.is_enabled %}btn-secondary{% else %}btn-danger{% endif %}">
+                        {% if r.is_enabled %}Active{% else %}Disabled{% endif %}
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center" style="padding: 16px; color: var(--text-muted);">No rules found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

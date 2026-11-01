@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 650px;">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">{{ title }}</h2>
+        <div class="card-subtitle">{{ household.name }}</div>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <a href="?method=cumulative" class="btn btn-sm {% if method == 'cumulative' or not method %}btn-primary{% else %}btn-secondary{% endif %}">Cumulative Dial</a>
+        <a href="?method=direct" class="btn btn-sm {% if method == 'direct' %}btn-primary{% else %}btn-secondary{% endif %}">Direct Period kWh</a>
+      </div>
+    </div>
+    <div class="card-body">
+      {% if form.errors %}
+        <div class="alert-box alert-danger">
+          Please correct the highlighted input errors.
+        </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Electricity Meter *</label>
+          {{ form.meter }}
+          {{ form.meter.errors }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Reading Date *</label>
+            {{ form.reading_date }}
+            {{ form.reading_date.errors }}
+          </div>
+          {% if form.reading_time %}
+            <div class="form-group">
+              <label class="form-label">Reading Time</label>
+              {{ form.reading_time }}
+            </div>
+          {% endif %}
+        </div>
+
+        {% if form.reading_value %}
+          <div class="form-group">
+            <label class="form-label">Current Meter Reading Value (kWh) *</label>
+            {{ form.reading_value }}
+            <div class="form-help">Enter the cumulative numeric dial value visible on your physical or digital meter display.</div>
+            {{ form.reading_value.errors }}
+          </div>
+        {% endif %}
+
+        {% if form.consumption_kwh %}
+          <div class="form-group">
+            <label class="form-label">Electricity Consumed in Interval (kWh) *</label>
+            {{ form.consumption_kwh }}
+            <div class="form-help">Direct kWh measurement (e.g. from sub-meter, smart plug, or period bill).</div>
+            {{ form.consumption_kwh.errors }}
+          </div>
+        {% endif %}
+
+        {% if form.reading_type %}
+          <div class="form-group">
+            <label class="form-label">Calculation Mode</label>
+            {{ form.reading_type }}
+          </div>
+        {% endif %}
+
+        {% if form.is_meter_reset_or_replacement %}
+          <div class="form-group" style="background-color: var(--bg-surface-secondary); padding: 10px; border-radius: var(--radius-sm);">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; cursor: pointer;">
+              {{ form.is_meter_reset_or_replacement }} Meter Replacement or Rollover Reset
+            </label>
+            <div class="form-help" style="margin-left: 22px;">Check this if your utility installed a new meter or the dial exceeded maximum display capacity.</div>
+          </div>
+        {% endif %}
+
+        {% if form.supporting_image %}
+          <div class="form-group">
+            <label class="form-label">Supporting Meter Image / Photo (Optional)</label>
+            {{ form.supporting_image }}
+            <div class="form-help">Store a photograph of your physical meter dial for verification audit trail.</div>
+          </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label class="form-label">Notes & Observations</label>
+          {{ form.notes }}
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button type="submit" class="btn btn-primary">Save Reading</button>
+          <a href="{% url 'consumption:list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

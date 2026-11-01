@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block page_title %}Consumption History & Aggregations{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Historical Consumption Visualizations</h2>
+      <div class="card-subtitle">{{ household.name }} &bull; Aggregated Trends & Periodic Patterns</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="historyDailyChart" style="height: 320px; width: 100%; margin-bottom: 24px;"></div>
+    <div id="historyMonthlyChart" style="height: 280px; width: 100%;"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const textColor = isDark ? '#F1F5F9' : '#172B45';
+  const gridColor = isDark ? '#26354A' : '#E1E8EF';
+
+  const dailyDates = {{ chart_data.daily_dates|safe }};
+  const dailyKwh = {{ chart_data.daily_kwh|safe }};
+
+  Plotly.newPlot('historyDailyChart', [{
+    x: dailyDates,
+    y: dailyKwh,
+    type: 'scatter',
+    mode: 'lines+markers',
+    fill: 'tozeroy',
+    fillcolor: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(35, 117, 200, 0.08)',
+    line: { color: '#2375C8', width: 2.2 },
+    marker: { size: 6, color: '#168A78' },
+    name: 'Daily kWh'
+  }], {
+    title: { text: 'Daily Electricity Consumption (Last 30 Days)', font: { size: 13, color: textColor } },
+    margin: { t: 40, r: 20, l: 45, b: 40 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: { tickcolor: gridColor, gridcolor: gridColor, tickfont: { color: textColor, size: 10.5 } },
+    yaxis: { title: { text: 'Units (kWh)', font: { color: textColor, size: 11 } }, tickcolor: gridColor, gridcolor: gridColor, tickfont: { color: textColor, size: 10.5 } }
+  }, { responsive: true, displayModeBar: false });
+
+  const monthlyLabels = {{ chart_data.monthly_labels|safe }};
+  const monthlyKwh = {{ chart_data.monthly_kwh|safe }};
+
+  Plotly.newPlot('historyMonthlyChart', [{
+    x: monthlyLabels,
+    y: monthlyKwh,
+    type: 'bar',
+    marker: { color: '#168A78' },
+    name: 'Monthly Aggregate'
+  }], {
+    title: { text: 'Monthly Billed & Recorded Consumption', font: { size: 13, color: textColor } },
+    margin: { t: 40, r: 20, l: 45, b: 35 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: { tickcolor: gridColor, gridcolor: 'transparent', tickfont: { color: textColor, size: 11 } },
+    yaxis: { title: { text: 'Total kWh', font: { color: textColor, size: 11 } }, tickcolor: gridColor, gridcolor: gridColor, tickfont: { color: textColor, size: 10.5 } }
+  }, { responsive: true, displayModeBar: false });
+});
+</script>
+{% endblock %}

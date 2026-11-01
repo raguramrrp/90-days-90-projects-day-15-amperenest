@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}{{ tariff.name }}{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+  <div>
+    <!-- Tariff Overview -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">{{ tariff.name }}</h2>
+          <div class="card-subtitle">{{ tariff.provider }} &bull; {{ tariff.state }}, {{ tariff.country }}</div>
+        </div>
+        <a href="{% url 'tariffs:edit' tariff.id %}" class="btn btn-secondary btn-sm">Edit Tariff Settings</a>
+      </div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Category</div>
+            <div style="font-size: 14px; font-weight: 600;">{{ tariff.consumer_category }}</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Frequency</div>
+            <div style="font-size: 14px; font-weight: 600;">{{ tariff.billing_frequency }}</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Electricity Duty</div>
+            <div style="font-size: 14px; font-weight: 600;">{{ tariff.electricity_duty_pct }}%</div>
+          </div>
+        </div>
+
+        {% if tariff.free_units_per_cycle > 0 %}
+          <div class="alert-box alert-success" style="margin-bottom: 14px;">
+            <div>
+              <strong>Govt Subsidy:</strong> First {{ tariff.free_units_per_cycle }} units free per cycle ({{ tariff.subsidy_description }}).
+            </div>
+          </div>
+        {% endif %}
+
+        <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+          Effective Schedule: <strong>{{ tariff.effective_from }}</strong> to <strong>{% if tariff.effective_to %}{{ tariff.effective_to }}{% else %}Present (Active){% endif %}</strong>
+          {% if tariff.notes %}<div style="margin-top: 4px; font-style: italic;">{{ tariff.notes }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Consumption Slabs Table -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Consumption Slabs (Telescopic Structure)</h2>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Units Range (kWh)</th>
+                <th class="text-right">Rate per Unit (₹/kWh)</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in slabs %}
+                <tr>
+                  <td>Slab {{ s.slab_order }}</td>
+                  <td style="font-weight: 500;">
+                    {{ s.slab_min }} – {% if s.slab_max is not None %}{{ s.slab_max }}{% else %}Above{% endif %} kWh
+                  </td>
+                  <td class="text-right" style="font-weight: 600; color: var(--accent-primary);">
+                    {{ currency_symbol }}{{ s.rate_per_kwh|floatformat:2 }}
+                  </td>
+                  <td class="text-right">
+                    <form method="post" action="{% url 'tariffs:slab_delete' tariff.id s.id %}" style="display: inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this slab?');">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center" style="padding: 16px; color: var(--text-muted);">No slabs defined.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add Slab Form -->
+      <div style="padding: 14px 18px; background-color: var(--bg-surface-secondary); border-top: 1px solid var(--border-color);">
+        <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px;">Add New Consumption Slab</h4>
+        <form method="post" action="{% url 'tariffs:slab_add' tariff.id %}" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          {% csrf_token %}
+          <div style="width: 80px;">
+            <label class="form-label" style="font-size: 11px;">Order</label>
+            {{ slab_form.slab_order }}
+          </div>
+          <div style="width: 100px;">
+            <label class="form-label" style="font-size: 11px;">Min (kWh)</label>
+            {{ slab_form.slab_min }}
+          </div>
+          <div style="width: 100px;">
+            <label class="form-label" style="font-size: 11px;">Max (kWh)</label>
+            {{ slab_form.slab_max }}
+          </div>
+          <div style="width: 110px;">
+            <label class="form-label" style="font-size: 11px;">Rate (₹/kWh)</label>
+            {{ slab_form.rate_per_kwh }}
+          </div>
+          <div style="margin-top: 20px;">
+            <button type="submit" class="btn btn-primary btn-sm">Add Slab</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Calculation Service Test Preview -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Tariff Calculation Engine Verification</h2>
+        <span class="badge badge-paid">250 kWh Benchmark</span>
+      </div>
+      <div class="card-body">
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+          Live simulation verified by the tariff calculation engine for <strong>250 units</strong> with 3.0 kW sanctioned load:
+        </div>
+
+        <div class="table-responsive" style="margin-bottom: 14px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Slab</th>
+                <th class="text-right">Units</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in preview_calc.slab_breakdown %}
+                <tr>
+                  <td>{{ b.range }}</td>
+                  <td class="text-right">{{ b.units }}</td>
+                  <td class="text-right">{{ currency_symbol }}{{ b.amount }}</td>
+                </tr>
+              {% endfor %}
+              {% if preview_calc.subsidy_amount > 0 %}
+                <tr style="background-color: var(--surface-green);">
+                  <td colspan="2">Free Units Subsidy</td>
+                  <td class="text-right" style="color: var(--accent-secondary);">-{{ currency_symbol }}{{ preview_calc.subsidy_amount }}</td>
+                </tr>
+              {% endif %}
+              {% if preview_calc.electricity_duty_amount > 0 %}
+                <tr>
+                  <td colspan="2">Duty ({{ preview_calc.electricity_duty_pct }}%)</td>
+                  <td class="text-right">+{{ currency_symbol }}{{ preview_calc.electricity_duty_amount }}</td>
+                </tr>
+              {% endif %}
+              <tr style="font-weight: 700;">
+                <td colspan="2">Estimated Benchmark Bill</td>
+                <td class="text-right" style="color: var(--accent-primary);">{{ currency_symbol }}{{ preview_calc.total_bill_amount }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

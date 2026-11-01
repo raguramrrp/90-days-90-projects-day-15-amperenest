@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block page_title %}Electricity Tariff Schedules{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Configured Electricity Tariff Schedules</h2>
+      <div class="card-subtitle">Configurable slab rates, subsidies, fixed charges, and government duties</div>
+    </div>
+    <a href="{% url 'tariffs:create' %}" class="btn btn-primary btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Add Custom Tariff Schedule
+    </a>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Tariff Schedule Name</th>
+            <th>State / Provider</th>
+            <th>Billing Cycle</th>
+            <th>Effective Period</th>
+            <th class="text-center">Slabs</th>
+            <th>Subsidies / Free Units</th>
+            <th>Duty</th>
+            <th>Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tariffs %}
+            <tr>
+              <td>
+                <div style="font-weight: 600;">{{ t.name }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ t.consumer_category }}</div>
+              </td>
+              <td>{{ t.state }} &bull; {{ t.provider }}</td>
+              <td>{{ t.billing_frequency }}</td>
+              <td style="font-size: 11.5px;">
+                {{ t.effective_from|date:"Y-m-d" }} to {% if t.effective_to %}{{ t.effective_to|date:"Y-m-d" }}{% else %}Present{% endif %}
+              </td>
+              <td class="text-center" style="font-weight: 600;">{{ t.slabs.count }}</td>
+              <td style="font-size: 12px;">
+                {% if t.free_units_per_cycle > 0 %}
+                  <span class="badge badge-paid">{{ t.free_units_per_cycle }} Free Units</span>
+                {% else %}
+                  <span style="color: var(--text-muted);">None</span>
+                {% endif %}
+              </td>
+              <td style="font-weight: 500;">{{ t.electricity_duty_pct }}%</td>
+              <td>
+                <span class="badge {% if t.is_active %}badge-active{% else %}badge-archived{% endif %}">
+                  {% if t.is_active %}Active{% else %}Archived{% endif %}
+                </span>
+              </td>
+              <td class="text-right">
+                <a href="{% url 'tariffs:detail' t.id %}" class="btn btn-secondary btn-sm">Inspect Slabs</a>
+                <a href="{% url 'tariffs:edit' t.id %}" class="btn btn-secondary btn-sm">Edit</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center" style="padding: 30px; color: var(--text-muted);">No tariff schedules found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

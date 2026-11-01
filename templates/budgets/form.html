@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px;">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">{{ title }}</h2>
+    </div>
+    <div class="card-body">
+      {% if form.errors %}
+        <div class="alert-box alert-danger">
+          Please correct the highlighted form errors.
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Target Month (1-12) *</label>
+            {{ form.month }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Year *</label>
+            {{ form.year }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Monthly Electricity Budget Cap (₹) *</label>
+          {{ form.monthly_budget_amount }}
+          <div class="form-help">Maximum monthly expenditure target</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Target Consumption Cap (kWh)</label>
+            {{ form.target_consumption_kwh }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Daily Average Target (kWh)</label>
+            {{ form.daily_target_kwh }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes & Constraints</label>
+          {{ form.notes }}
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button type="submit" class="btn btn-primary">Save Budget Limits</button>
+          <a href="{% url 'budgets:dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

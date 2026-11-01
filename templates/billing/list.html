@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Electricity Bills & Expense Management{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Utility Bills & Statements</h2>
+      <div class="card-subtitle">{{ household.name }} &bull; Track Official Utility Statements, Dues, and Payment Records</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'billing:create' %}" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Record Official Bill
+      </a>
+      <a href="{% url 'billing:calculator' %}" class="btn btn-secondary btn-sm">
+        Simulate / Calculate Bill
+      </a>
+      <a href="{% url 'analytics:export_bills_excel' %}" class="btn btn-secondary btn-sm">
+        Export Excel
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary KPI Bar -->
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 14px 18px; background-color: var(--bg-surface-secondary); border-bottom: 1px solid var(--border-color);">
+    <div>
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Total Pending / Due</div>
+      <div style="font-size: 18px; font-weight: 700; color: {% if total_due > 0 %}var(--danger){% else %}var(--success){% endif %};">
+        {{ currency_symbol }}{{ total_due|intcomma }}
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Pending Bills</div>
+      <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">{{ pending_count }} Invoice(s)</div>
+    </div>
+    <div>
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Settled Invoices</div>
+      <div style="font-size: 18px; font-weight: 700; color: var(--accent-secondary);">{{ paid_count }} Paid</div>
+    </div>
+  </div>
+
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Bill Reference #</th>
+            <th>Meter</th>
+            <th>Billing Period</th>
+            <th class="text-right">Units (kWh)</th>
+            <th class="text-right">Billed Amount</th>
+            <th>Due Date</th>
+            <th>Payment Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bills %}
+            <tr>
+              <td>
+                <a href="{% url 'billing:detail' b.id %}" style="font-weight: 600; color: var(--accent-primary); text-decoration: none;">
+                  {{ b.bill_number|default:b.id }}
+                </a>
+                {% if b.is_estimated_bill %}
+                  <span class="badge badge-pending" style="margin-left: 4px;">Estimate</span>
+                {% endif %}
+              </td>
+              <td>{{ b.meter.meter_name }}</td>
+              <td style="font-size: 12px;">{{ b.billing_period_start|date:"M d, Y" }} – {{ b.billing_period_end|date:"M d, Y" }}</td>
+              <td class="text-right" style="font-weight: 600;">{{ b.total_units_kwh }} kWh</td>
+              <td class="text-right" style="font-weight: 700; color: var(--text-primary);">
+                {{ currency_symbol }}{{ b.total_bill_amount|intcomma }}
+              </td>
+              <td style="font-size: 12px;">{{ b.due_date|default:'—' }}</td>
+              <td>
+                <span class="badge {% if b.payment_status == 'Paid' %}badge-paid{% elif b.payment_status == 'Overdue' %}badge-overdue{% else %}badge-pending{% endif %}">
+                  {{ b.get_payment_status_display }}
+                </span>
+              </td>
+              <td class="text-right">
+                <a href="{% url 'billing:detail' b.id %}" class="btn btn-secondary btn-sm">Inspect</a>
+                {% if b.payment_status != 'Paid' %}
+                  <form method="post" action="{% url 'billing:mark_paid' b.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm">Mark Paid</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center" style="padding: 30px;">
+                <div class="empty-state">
+                  <h4>No Electricity Bills Recorded</h4>
+                  <p>Log your official utility bills to track monthly expenses, detect billing discrepancies, and monitor payment schedules.</p>
+                  <a href="{% url 'billing:create' %}" class="btn btn-primary btn-sm">Record Official Bill</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

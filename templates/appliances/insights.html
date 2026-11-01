@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Appliance Energy Breakdown & Insights{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Estimated Appliance Consumption Distribution</h2>
+          <div class="card-subtitle">Breakdown of household power drain across registered inventory</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="appliancePieChart" style="height: 320px; width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Ranking by Estimated Monthly Cost</h2>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Appliance</th>
+                <th class="text-right">Share (%)</th>
+                <th class="text-right">Est. Cost (₹/mo)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in breakdown %}
+                <tr>
+                  <td>
+                    <div style="font-weight: 600;">{{ item.appliance.name }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">{{ item.monthly_kwh }} kWh/month</div>
+                  </td>
+                  <td class="text-right" style="font-weight: 600; color: var(--accent-primary);">
+                    {{ item.share_pct }}%
+                  </td>
+                  <td class="text-right" style="font-weight: 600;">
+                    ~{{ currency_symbol }}{{ item.monthly_cost|intcomma }}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center" style="padding: 20px; color: var(--text-muted);">No appliances registered.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const textColor = isDark ? '#F1F5F9' : '#172B45';
+
+  const labels = [{% for item in breakdown %}"{{ item.appliance.name|truncatechars:20 }}",{% endfor %}];
+  const values = [{% for item in breakdown %}{{ item.monthly_kwh }},{% endfor %}];
+
+  Plotly.newPlot('appliancePieChart', [{
+    labels: labels,
+    values: values,
+    type: 'pie',
+    hole: 0.45,
+    textinfo: 'percent',
+    hoverinfo: 'label+value+percent',
+    marker: {
+      colors: ['#2375C8', '#168A78', '#C68B2D', '#64748B', '#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6']
+    }
+  }], {
+    margin: { t: 20, r: 20, l: 20, b: 20 },
+    paper_bgcolor: 'transparent',
+    legend: { font: { color: textColor, size: 10.5 } }
+  }, { responsive: true, displayModeBar: false });
+});
+</script>
+{% endblock %}

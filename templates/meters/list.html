@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block page_title %}Electricity Meters{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Household Electricity Meters</h2>
+      <div class="card-subtitle">{{ household.name }} &bull; Digital & Analog Meter Register</div>
+    </div>
+    <a href="{% url 'meters:create' %}" class="btn btn-primary btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Register New Meter
+    </a>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Meter Name</th>
+            <th>Meter Number</th>
+            <th>Provider</th>
+            <th>Connection</th>
+            <th class="text-right">Load</th>
+            <th>Assigned Tariff</th>
+            <th>Status</th>
+            <th class="text-right">Readings</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in meters %}
+            <tr>
+              <td>
+                <div style="font-weight: 600;">{{ m.meter_name }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ m.get_consumer_category_display }}</div>
+              </td>
+              <td style="font-family: monospace;">{{ m.meter_number }}</td>
+              <td>{{ m.electricity_provider }}</td>
+              <td>{{ m.get_connection_type_display }}</td>
+              <td class="text-right" style="font-weight: 500;">{{ m.sanctioned_load_kw }} kW</td>
+              <td>
+                {% if m.tariff_plan %}
+                  <a href="{% url 'tariffs:detail' m.tariff_plan.id %}" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">
+                    {{ m.tariff_plan.name|truncatechars:26 }}
+                  </a>
+                {% else %}
+                  <span style="color: var(--text-muted);">Default Tariff</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {% if m.meter_status == 'Active' %}badge-active{% else %}badge-archived{% endif %}">
+                  {{ m.meter_status }}
+                </span>
+              </td>
+              <td class="text-right">{{ m.total_readings_count }}</td>
+              <td class="text-right" style="white-space: nowrap;">
+                <a href="{% url 'meters:detail' m.id %}" class="btn btn-secondary btn-sm">View</a>
+                <a href="{% url 'meters:edit' m.id %}" class="btn btn-secondary btn-sm">Edit</a>
+                <a href="{% url 'meters:archive' m.id %}" class="btn btn-secondary btn-sm">
+                  {% if m.meter_status == 'Active' %}Archive{% else %}Restore{% endif %}
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center" style="padding: 30px;">
+                <div class="empty-state">
+                  <h4>No Electricity Meters Found</h4>
+                  <p>Add your physical utility meter number to start tracking power consumption.</p>
+                  <a href="{% url 'meters:create' %}" class="btn btn-primary btn-sm">Add Meter</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block page_title %}Delete Meter Reading{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Confirm Reading Deletion</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 13.5px; margin-bottom: 14px;">
+        Are you sure you want to delete the reading for <strong>{{ reading.meter.meter_name }}</strong> on <strong>{{ reading.reading_date }}</strong> (Value: {{ reading.reading_value }} kWh)?
+      </p>
+      <div class="alert-box alert-warning">
+        Deleting this reading will automatically recompute the consumption difference for subsequent readings.
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div style="display: flex; gap: 10px; margin-top: 14px;">
+          <button type="submit" class="btn btn-danger">Confirm Delete</button>
+          <a href="{% url 'consumption:list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

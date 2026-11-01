@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Consumption Forecasting & Projections{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Billing Cycle Statistical Forecast</h2>
+          <div class="card-subtitle">{{ household.name }} &bull; Linear Moving-Average with Boundary Constraint</div>
+        </div>
+        {% if forecast.has_sufficient_data %}
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm">Archive Snapshot</button>
+          </form>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if forecast.has_sufficient_data %}
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div style="padding: 14px; background-color: var(--surface-blue); border-radius: var(--radius-sm); border: 1px solid rgba(35, 117, 200, 0.2);">
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-primary); font-weight: 600;">Projected Total Consumption</div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-top: 4px;">
+                {{ forecast.projected_total_kwh|floatformat:1 }} <span style="font-size: 14px; font-weight: 500;">kWh</span>
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
+                {{ forecast.current_consumed_kwh|floatformat:1 }} kWh consumed + {{ forecast.daily_average_kwh }} kWh/d &times; {{ forecast.cycle_info.days_remaining }} remaining days
+              </div>
+            </div>
+
+            <div style="padding: 14px; background-color: var(--surface-green); border-radius: var(--radius-sm); border: 1px solid rgba(22, 138, 120, 0.2);">
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-secondary); font-weight: 600;">Projected End-of-Cycle Bill</div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-top: 4px;">
+                {{ currency_symbol }}{{ forecast.projected_bill_amount|intcomma }}
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
+                Calculated using {{ forecast.tariff_used }}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+              <span>Forecast Confidence Score (Based on cycle maturity & reading frequency)</span>
+              <span style="font-weight: 600; color: var(--accent-primary);">{{ forecast.confidence_score_pct }}%</span>
+            </div>
+            <div style="height: 6px; background-color: var(--bg-surface-secondary); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-color);">
+              <div style="height: 100%; width: {{ forecast.confidence_score_pct }}%; background-color: var(--accent-primary);"></div>
+            </div>
+          </div>
+
+          <div class="accuracy-disclaimer">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span><strong>Honest Statistical Model:</strong> Forecast assumes current average daily pace continues until billing cycle end date ({{ forecast.cycle_info.cycle_end|date:"M d, Y" }}). Unexpected weather swings or appliance usage changes will shift actual outcomes.</span>
+          </div>
+        {% else %}
+          <div class="alert-box alert-warning">
+            <div>
+              <strong>Insufficient Historical Data:</strong>
+              <div style="margin-top: 4px;">{{ forecast.message }}</div>
+            </div>
+          </div>
+          <div style="text-align: center; padding: 20px;">
+            <a href="{% url 'consumption:create' %}" class="btn btn-primary btn-sm">Record Today's Reading</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Forecast History Archive -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Saved Forecast Snapshots</h2>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date Taken</th>
+                <th class="text-right">Projected (kWh)</th>
+                <th class="text-right">Est. Bill</th>
+                <th class="text-right">Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in history %}
+                <tr>
+                  <td>{{ f.forecast_date|date:"Y-m-d" }}</td>
+                  <td class="text-right" style="font-weight: 600;">{{ f.projected_total_kwh }}</td>
+                  <td class="text-right" style="font-weight: 600;">{{ currency_symbol }}{{ f.projected_cost_amount|intcomma }}</td>
+                  <td class="text-right">{{ f.confidence_score_pct }}%</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center" style="padding: 20px; color: var(--text-muted);">No archived forecast snapshots.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

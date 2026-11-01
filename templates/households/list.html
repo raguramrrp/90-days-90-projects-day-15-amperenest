@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block page_title %}Household Properties{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Managed Household Properties</h2>
+      <div class="card-subtitle">Manage residential properties, occupant profiles, connected loads, and authorized household members</div>
+    </div>
+    <a href="{% url 'households:create' %}" class="btn btn-primary btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Add New Property
+    </a>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Property Name</th>
+            <th>Type & Location</th>
+            <th class="text-center">Occupants</th>
+            <th class="text-right">Sanctioned Load</th>
+            <th class="text-right">Monthly Budget</th>
+            <th>Cycle Start</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in households %}
+            <tr>
+              <td>
+                <div style="font-weight: 600; font-size: 13.5px;">{{ h.name }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ h.meters.count }} Meter(s) &bull; {{ h.appliances.count }} Appliance(s)</div>
+              </td>
+              <td>
+                <div>{{ h.get_property_type_display }}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">{{ h.city }}, {{ h.state }}</div>
+              </td>
+              <td class="text-center">{{ h.occupants }} Persons</td>
+              <td class="text-right" style="font-weight: 500;">{{ h.sanctioned_load_kw }} kW</td>
+              <td class="text-right" style="font-weight: 600; color: var(--accent-primary);">{{ currency_symbol }}{{ h.monthly_budget_amount|intcomma }}</td>
+              <td>Day {{ h.billing_cycle_day }} of month</td>
+              <td class="text-right">
+                <a href="{% url 'households:switch' h.id %}?next={{ request.path|urlencode }}" class="btn btn-sm {% if active_household.id == h.id %}btn-primary{% else %}btn-secondary{% endif %}">
+                  {% if active_household.id == h.id %}Active{% else %}Switch{% endif %}
+                </a>
+                <a href="{% url 'households:detail' h.id %}" class="btn btn-secondary btn-sm">Details</a>
+                <a href="{% url 'households:edit' h.id %}" class="btn btn-secondary btn-sm">Edit</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center" style="padding: 30px;">
+                <div class="empty-state">
+                  <h4>No Households Found</h4>
+                  <p>Register your first household residence to begin tracking electricity consumption.</p>
+                  <a href="{% url 'households:create' %}" class="btn btn-primary btn-sm">Create Property</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

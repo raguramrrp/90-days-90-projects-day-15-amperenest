@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block page_title %}User Profile{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Personal & Contact Profile</span>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            {{ form.first_name }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            {{ form.last_name }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          {{ form.email }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          {{ form.phone_number }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Default Household</label>
+          {{ form.default_household }}
+          <div class="form-help">Selected automatically upon login</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button type="submit" class="btn btn-primary">Save Profile Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
