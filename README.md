@@ -409,10 +409,6 @@ Destroying test database for alias 'default'...
 
 ---
 
-## 21. Technical Skills & Resume Keywords
-`Python 3.12` &bull; `Django 5.1` &bull; `PostgreSQL` &bull; `Django ORM` &bull; `Telescopic Tariff Calculation` &bull; `Time-Series Analytics` &bull; `Plotly.js` &bull; `Pandas` &bull; `OpenPyXL` &bull; `Energy Cost Modeling` &bull; `Statistical Forecasting` &bull; `Role-Based Access Control (RBAC)` &bull; `Enterprise UI/UX Design` &bull; `Unit & Integration Testing`
 
----
-
-## 22. License & Attribution
+## 21. License & Attribution
 Distributed under the **MIT License**. Created as part of the **90 Days – 90 Projects Challenge** by Ragu Ram P.
